@@ -1,0 +1,141 @@
+---
+title: "Final Project for real this time"
+output: html_document
+date: "2023-04-28"
+---
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(readtext)
+library(tidytext)
+library(widyr)
+library(SnowballC)
+```
+In Game Studies, a heavily debated topic that comes up often is the feeling of immersion. Immersion, in context of Game Studies refers to a game’s ability to ensnare the audience within its mechanics or story. Traditionally, we see immersion as being as a factor of film and literature where we can find ourselves lost in the idea that is being proposed to us through the media. Video games, as discussed by Nilsson et al. have two levels of immersion, the “diegetic” level and the “nondiegetic” level (113)^[Nilsson, Niels Chr, Rolf Nordahl, and Stefania Serafin. "Immersion revisited: A review of existing definitions of immersion and their relation to different theories of presence." Human technology 12, no. 2 (2016): 108-134.]. The former of the two can be summed up in the same way that we look at films and movies, where the idea and narrative of the story does the legwork of becoming entrapped within the media. We can look to something like “The Last of Us” by Naughty Dog in how it is legendarily known for its story and how it captured the hearts and minds of its audience.
+The “nondiegetic” level refers to the aspect of the video game that is unique to it as an interactive medium. When we talk nondiegetic we refer to the mechanics of the game, the way that the mechanics work to keep the player interested and playing. One could compare this experience to the way that one would feel enthralled by the direction and production of a film, pulling focus into the craft.
+The issue with discussing the former is that it’s difficult to measure a feeling of narrative weight and its impact on immersion, however, we can look at mechanically focused video games in order to see their reactions from reviewers.
+The data that I bring to the table today is focused on the top ten games from the last five years as reviewed by IGN—one of the largest pop culture news sites with a major focus on video games. What I seek to accomplish is find out if one of the more mechanically focused genre of games—the RPGs—pulls higher or similar reviews. And if they do not, if there is any existing trend in which games over time tend to get higher reviews. The reason this is important to the field of Game Studies can be summed up in what Matthew Bond and Russell Beale speculated on in their study on what makes a good game, reviews can be used to determine what makes for a good game in modern culture and games are no stranger to the phenomenon of trends based on what players tend to expect from the medium^[Bond, Matthew, and Russell Beale. "What makes a good game? Using reviews to inform design." People and Computers XXIII Celebrating People and Technology (2009): 418-422.]. As a result, I find that studying the current state of game reviews could inform what the future trends we can expect to see from the video game industry.
+
+```{r}
+rpg.filter <- Code_Final %>%
+  filter(grepl("RPG", Genre) | grepl("Strategy RPG", Genre) | grepl("Action RPG", Genre) | grepl("Tactical RPG", Genre) | grepl("Turn Based RPG", Genre))
+
+head(rpg.filter, n=11)
+```
+Currently we can see that the mean of the RPG genre of scores is about 9.46, which does not overall give this feeling that I expected going into this study. In fact, given the depth of the mechanics of these games, being particularly familiar with most of these games, I would have expected that should my hypothesis hold true that the reviews would reflect this with a higher overall score. Now, granted, the sample size I’m currently working with is small with the smallest score available to the dataset being 9. Overall I expected that the number would reflect something closer to 10 or at least beyond the halfway point.
+```{r}
+mean(rpg.filter$Score)
+```
+
+Even still, we see through taking the mean of the games overall that the general score is lower, representing a 9.278. However the difference is not by much. I wouldn’t necessarily go so far as to say that this fully represents my hypothesis, especially given how underrepresented the other genres are. If I were, for example, to say that the average score for each genre determined the quality, then Racing would have to be representative of the best, most immersive genre by my hypothesis because it received one review and it was a perfect 10. In fact, when I map out how many of each genre are represented, we have an incredibly diverse grouping of genres with very few having more than two reviews to a genre. So, if the answer is not tied to this specific genre, what is it that we can draw from the data? What determines the likelihood that a game will receive a 10?
+```{r}
+mean(meta$Score)
+```
+```{r}
+bygenre <- Code_Final[order (Code_Final$Genre, -Code_Final$Score),]
+bygenre
+
+italyreference <- table(Code_Final$Genre)
+lbls <- paste(names(italyreference), "\n", italyreference, sep="")
+pie(italyreference, labels = lbls,
+   main="Genres Mapped Out in Reviews")
+```
+
+```{r}
+byscore <- Code_Final[order (Code_Final$Score, -Code_Final$Score),]
+byscore
+
+italyreference2italianbogaloo <- table(Code_Final$Score)
+lbls <- paste(names(italyreference2italianbogaloo), "\n", italyreference2italianbogaloo, sep="")
+pie(italyreference2italianbogaloo, labels = lbls,
+   main="Scores Mapped Out in Reviews")
+```
+
+My next step was to look at the publishers of the games represented. Across the entire dataset, we see that there are many publishers who only put out one game. Otherwise, there are many big hitters such as Electronic Arts, Capcom, Nintendo, and Sony Interactive Entertainment which each put out multiple, with Nintendo and Sony being the largest publishers. This isn’t really surprising. Nintendo and Sony are colloquially considered one of the big three companies of the gaming industry considering they are the companies that also support a console and as a result they tend to publish games for themselves. You may also notice that there are other famous studios that only have one game in the entire dataset, such as Bethesda, known for publishing Skyrim an absurd number of times, but they only have one entry. As an individual who has been a longtime customer of the gaming industry, I can understand why. Bethesda, for example, is primarily a developer, and as a result tends to publish the games they developed. But not every studio has the time or resources necessary to publish multiple games a year.
+
+
+```{r}
+
+CF.by.Dev <- Code_Final %>%
+  group_by(Publisher) %>% 
+  summarize(count = n())
+ggplot(CF.by.Dev, aes(x = Publisher, y = count)) +
+  geom_col() +
+  scale_x_discrete(guide=guide_axis(n.dodge=9)) +
+  ggtitle("Games By Publisher")
+
+
+
+```
+When we further filter the data to look at studios that published games that received a 10, the data looks a little less impressive. Sony and Xbox are now tied, but Nintendo is no longer anywhere to be seen, which seems to imply that while a studio publishes multiple games a year, it doesn’t indicate quality or imply that any percentage of the games published would necessarily be of high quality—or at least the highest quality that IGN would score.
+
+
+```{r}
+CF.by.Dev <- Code_Final %>%
+  group_by(Publisher) %>% 
+  filter(Score == 10) %>%
+  summarize(count = n())
+ggplot(CF.by.Dev, aes(x = Publisher, y = count)) +
+  geom_col() +
+  scale_x_discrete(guide=guide_axis(n.dodge=9)) +
+  ggtitle("Games with a 10 By Publisher")
+```
+
+It is interesting that three of the publishers in the data are what would colloquially be understood as “indie studios”. While Sony, Xbox, Rockstar (developers of Grand Theft Auto), and Bandai Namco (publishers of Elden Ring) are typically understood to be AAA games—meaning games with high budgets and many resources at hand—the remaining games are clearly somewhere between indie and AA studios—games with lower budgets and fewer resources. Looking at Developers with a 10 score, we see that there is a fair representation of indie, AA, and AAA studios. 
+
+
+```{r}
+Dev.by.Score <- Code_Final %>%
+  group_by(Developer) %>%
+  filter(Score == 10) %>%
+  summarize(count = n())
+ggplot(Dev.by.Score, aes(x = Developer, y = count)) +
+  geom_col() +
+  scale_x_discrete(guide=guide_axis(n.dodge=9)) +
+  ggtitle("Developers with 10 Score")
+
+```
+This is when I decided that it may be imperative to return to Genre, because as I was able to determine that RPGs on average were expected to have higher scores than the entire sole mean of the data, I wanted to know which genre had the highest amount of perfect scores and through a quick barplot determined that the answer was the Action Adventure Genre, which matched the RPGs in total at 3. This adds up as two of the games are from the same series, God of War and God of War: Ragnarok with the straggler being Red Dead Redemption, which competed with God of War at the Game Awards in 2016.
+
+
+```{r}
+Score.by.Genre <- Code_Final %>%
+  group_by(Genre) %>%
+  filter(Score == 10) %>%
+  summarize(count = n())
+ggplot(Score.by.Genre, aes(x = Genre, y = count)) +
+  geom_col() +
+  ggtitle("Genres with 10 Score")
+
+```
+I also couldn’t rule out that some reviewers were more susceptible to giving higher reviews than others. Game reviews are, after all, entirely subjective even if they have strenuous guidelines for what makes a “good” game. From here I found that while there were two individuals who gave more than one review, they only had two each and five other people were also giving a 10 across the last five years, which doesn’t really prove this possibility.
+
+
+```{r}
+Score.by.Reviewer <- Code_Final %>%
+  group_by(Article_Writer) %>%
+  filter(Score == 10) %>%
+  summarize(count = n())
+ggplot(Score.by.Reviewer, aes(x = Article_Writer, y = count)) +
+  geom_col() +
+  scale_x_discrete(guide=guide_axis(n.dodge=7)) +
+  ggtitle("Reviewers who gave 10 Score")
+```
+
+My last resort here came down to a line chart, because if nothing else, maybe the years could give me something to go off. Placing the data of games on a line chart did make an interesting point that during the covid years of 2020-2021, there were only one a piece of a 10 score but the years leading in and out of that era had more 10 scores. I don’t have the market data to determine any correlation as records pertaining to development of video games are notoriously hard to come by, however I do find this endlessly interesting that there is a possibility to look into market trends and world events.
+
+
+```{r}
+tens.by.year <- Code_Final %>% group_by(Year) %>% 
+  filter(Score == 10) %>%
+  summarize(count = n())
+ggplot(tens.by.year, aes(x = Year, y = count)) +
+  geom_line() +
+  ggtitle("10 Score by Year")
+```
+
+In this end, the argument I can make using this data is that…
+We need more data. It’s my assessment that in order to fully grasp the trends of reviews we’ll need hundreds upon hundreds of games, which will be a time-consuming process that will likely take a team. Some suggestions I can make as to where to look to improve my work is to find a way to delineate between AAA games and the indie/AA scene as the requirements for a 10 are possibly skewed based on the time and development that could go into a game—i.e. it may be possible that the more money and time expected to go into a game, the more people expect and therefore the harder it is to get a higher score.
+The data moving forward should also be very careful in how it represents the genres of the games. IGN does not list the genre of the games that they review as part of the reviewing process and so the genres had to be determined as part of my process and as a result future non-me researchers may see a game I would have classified as Hack and Slash as an Action game. Even genres in games are not clear and can easily muddy the data. We may also want to, moving forward, look at average reviews across multiple platforms rather than the postings of a single website to best determine what is largely considered high quality among fans and reviewers. Metacritic may be the best source moving forward given that it collects data from both professional reviewers and the reviews of individual fans.
+With all that said and done, I cannot make a definitive argument with the current data, however I do see some interesting trends with the plots I’ve made so far, and it would be interesting and imperative for the industry to further study and develop these trends and see what has changed in the industry and whether or not games “deserving” of a 10 are changing the way that we understand game development. That is currently far beyond the scope of a single underpaid graduate student to put together, but given time and money, this can easily be uncovered with the proper data.
